@@ -3,18 +3,19 @@ package producer
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"reflect"
+
+	"github.com/nycu-ucr/gonet/http"
 
 	"github.com/mohae/deepcopy"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/consumer"
-	pcf_context "github.com/free5gc/pcf/context"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/http_wrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/consumer"
+	pcf_context "github.com/nycu-ucr/pcf/context"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 func HandleDeletePoliciesPolAssoId(request *http_wrapper.Request) *http_wrapper.Response {

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/free5gc/idgenerator"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/logger"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/logger"
 )
 
 // key is supi

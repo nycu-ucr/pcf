@@ -10,16 +10,16 @@
 package policyauthorization
 
 import (
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/nycu-ucr/gin"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/producer"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/http_wrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/producer"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 // HTTPDeleteEventsSubsc - deletes the Events Subscription subresource

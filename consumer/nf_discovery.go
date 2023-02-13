@@ -3,14 +3,15 @@ package consumer
 import (
 	"context"
 	"fmt"
-	"net/http"
+
+	"github.com/nycu-ucr/gonet/http"
 
 	"github.com/antihax/optional"
 
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/openapi/Nnrf_NFDiscovery"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 func SendSearchNFInstances(

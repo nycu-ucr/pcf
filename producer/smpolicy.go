@@ -3,21 +3,22 @@ package producer
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/nycu-ucr/gonet/http"
 
 	"github.com/antihax/optional"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/free5gc/MongoDBLibrary"
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/context"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/http_wrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/Nudr_DataRepository"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/context"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 const flowRuleDataColl = "policyData.ues.flowRule"

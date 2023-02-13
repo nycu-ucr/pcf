@@ -8,10 +8,10 @@ import (
 	"sync"
 
 	"github.com/free5gc/idgenerator"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/factory"
-	"github.com/free5gc/pcf/logger"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/factory"
+	"github.com/nycu-ucr/pcf/logger"
 )
 
 var pcfCtx *PCFContext

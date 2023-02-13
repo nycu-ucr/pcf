@@ -3,8 +3,8 @@ package notifyevent
 import (
 	"github.com/tim-ywliu/event"
 
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/logger"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/logger"
 )
 
 var notifyDispatcher *event.Dispatcher

@@ -18,9 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/service"
 	"github.com/free5gc/version"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/service"
 )
 
 var PCF = &service.PCF{}

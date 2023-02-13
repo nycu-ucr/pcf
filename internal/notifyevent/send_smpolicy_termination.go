@@ -2,13 +2,14 @@ package notifyevent
 
 import (
 	"context"
-	"net/http"
+
+	"github.com/nycu-ucr/gonet/http"
 
 	"github.com/tim-ywliu/event"
 
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 const SendSMpolicyTerminationNotifyEventName event.Name = "SendSMpolicyTerminationNotify"

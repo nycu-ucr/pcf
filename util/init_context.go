@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/free5gc/MongoDBLibrary"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/context"
-	"github.com/free5gc/pcf/factory"
-	"github.com/free5gc/pcf/logger"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/context"
+	"github.com/nycu-ucr/pcf/factory"
+	"github.com/nycu-ucr/pcf/logger"
 )
 
 // Init PCF Context from config flie

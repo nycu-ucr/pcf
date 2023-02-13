@@ -1,13 +1,14 @@
 package httpcallback
 
 import (
-	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/nycu-ucr/gonet/http"
 
-	"github.com/free5gc/logger_util"
-	"github.com/free5gc/pcf/logger"
+	"github.com/nycu-ucr/gin"
+
+	"github.com/nycu-ucr/logger_util"
+	"github.com/nycu-ucr/pcf/logger"
 )
 
 // Route is the information for every URI.

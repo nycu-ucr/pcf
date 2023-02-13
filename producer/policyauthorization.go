@@ -3,19 +3,20 @@ package producer
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/nycu-ucr/gonet/http"
+
 	"github.com/cydev/zero"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/context"
-	"github.com/free5gc/pcf/internal/notifyevent"
-	"github.com/free5gc/pcf/logger"
-	"github.com/free5gc/pcf/util"
+	"github.com/nycu-ucr/http_wrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/context"
+	"github.com/nycu-ucr/pcf/internal/notifyevent"
+	"github.com/nycu-ucr/pcf/logger"
+	"github.com/nycu-ucr/pcf/util"
 )
 
 func transferAfRoutReqRmToAfRoutReq(AfRoutReqRm *models.AfRoutingRequirementRm) *models.AfRoutingRequirement {
