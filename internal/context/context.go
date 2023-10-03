@@ -10,12 +10,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/pkg/factory"
-	"github.com/free5gc/util/idgenerator"
-	"github.com/free5gc/util/mongoapi"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/pkg/factory"
+	"github.com/nycu-ucr/util/idgenerator"
+	"github.com/nycu-ucr/util/mongoapi"
 )
 
 type PCFContext struct {

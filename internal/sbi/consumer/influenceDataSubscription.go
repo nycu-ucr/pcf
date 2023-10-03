@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/util"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/util"
 )
 
 func CreateInfluenceDataSubscription(ue *pcf_context.UeContext, request models.SmPolicyContextData) (

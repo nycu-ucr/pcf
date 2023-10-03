@@ -1,4 +1,4 @@
-module github.com/free5gc/pcf
+module github.com/nycu-ucr/pcf
 
 go 1.17
 
@@ -6,32 +6,33 @@ require (
 	github.com/antihax/optional v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cydev/zero v0.0.0-20160322155811-4a4535dd56e7
-	github.com/free5gc/openapi v1.0.7-0.20230802173229-2b3ded4db293
-	github.com/free5gc/util v1.0.5-0.20231001095115-433858e5be94
-	github.com/gin-contrib/cors v1.3.1
-	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/sirupsen/logrus v1.8.1
+	github.com/nycu-ucr/cors v0.0.0-20221108151123-ce0e42c254d8
+	github.com/nycu-ucr/gin v0.0.0-20230307121200-573befe2dfbe
+	github.com/nycu-ucr/gonet v0.0.0-20230328095129-6e9ca74b90b5
+	github.com/nycu-ucr/openapi v0.0.0-20230928123234-3c11228b5e01
+	github.com/nycu-ucr/util v0.0.0-20230928120650-6ed674c090b3
+	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.5
 	go.mongodb.org/mongo-driver v1.8.4
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
+	github.com/antonfisher/nested-logrus-formatter v1.3.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/evanphx/json-patch v0.5.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
-	github.com/golang/protobuf v1.5.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -42,6 +43,11 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/nycu-ucr/gock v0.0.0-20230928062355-60066588379a // indirect
+	github.com/nycu-ucr/net v0.0.0-20230321075841-be2b9a37bf1d // indirect
+	github.com/nycu-ucr/oauth2 v0.0.0-20230927074609-e939447bd9b2 // indirect
+	github.com/nycu-ucr/onvmpoller v0.0.0-20230328094138-e24131a655bb // indirect
+	github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
@@ -54,14 +60,12 @@ require (
 	github.com/xdg-go/stringprep v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20210810183815-faf39c7919d5 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/appengine v1.6.6 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
-	gopkg.in/h2non/gock.v1 v1.1.2 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

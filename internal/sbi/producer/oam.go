@@ -1,13 +1,13 @@
 package producer
 
 import (
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 	"strconv"
 
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/util/httpwrapper"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/util/httpwrapper"
 )
 
 type UEAmPolicy struct {

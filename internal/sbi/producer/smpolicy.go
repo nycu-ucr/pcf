@@ -3,22 +3,22 @@ package producer
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 	"strconv"
 	"strings"
 
 	"github.com/antihax/optional"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/sbi/consumer"
-	"github.com/free5gc/pcf/internal/util"
-	"github.com/free5gc/util/httpwrapper"
-	"github.com/free5gc/util/mongoapi"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/Nudr_DataRepository"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/sbi/consumer"
+	"github.com/nycu-ucr/pcf/internal/util"
+	"github.com/nycu-ucr/util/httpwrapper"
+	"github.com/nycu-ucr/util/mongoapi"
 )
 
 const (

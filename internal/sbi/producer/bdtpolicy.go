@@ -3,20 +3,20 @@ package producer
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 
 	"github.com/antihax/optional"
 	"github.com/google/uuid"
 	"github.com/mohae/deepcopy"
 
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/sbi/consumer"
-	"github.com/free5gc/pcf/internal/util"
-	"github.com/free5gc/util/httpwrapper"
+	"github.com/nycu-ucr/openapi/Nnrf_NFDiscovery"
+	"github.com/nycu-ucr/openapi/Nudr_DataRepository"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/sbi/consumer"
+	"github.com/nycu-ucr/pcf/internal/util"
+	"github.com/nycu-ucr/util/httpwrapper"
 )
 
 func HandleGetBDTPolicyContextRequest(request *httpwrapper.Request) *httpwrapper.Response {
