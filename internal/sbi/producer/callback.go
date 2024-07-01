@@ -2,14 +2,14 @@ package producer
 
 import (
 	"fmt"
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"strings"
 
-	"github.com/nycu-ucr/openapi/models"
-	pcf_context "github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/internal/util"
-	"github.com/nycu-ucr/util/httpwrapper"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/internal/util"
+	"github.com/free5gc/util/httpwrapper"
 )
 
 func HandleAmfStatusChangeNotify(request *httpwrapper.Request) *httpwrapper.Response {

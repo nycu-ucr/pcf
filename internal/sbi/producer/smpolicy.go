@@ -1,29 +1,30 @@
 package producer
 
 import (
-	"context"
 	"fmt"
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/antihax/optional"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/Nudr_DataRepository"
-	"github.com/nycu-ucr/openapi/models"
-	pcf_context "github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/internal/sbi/consumer"
-	"github.com/nycu-ucr/pcf/internal/util"
-	"github.com/nycu-ucr/util/httpwrapper"
-	"github.com/nycu-ucr/util/mongoapi"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nudr_DataRepository"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/internal/sbi/consumer"
+	"github.com/free5gc/pcf/internal/util"
+	"github.com/free5gc/util/flowdesc"
+	"github.com/free5gc/util/httpwrapper"
+	"github.com/free5gc/util/mongoapi"
 )
 
 const (
 	flowRuleDataColl = "policyData.ues.flowRule"
 	qosFlowDataColl  = "policyData.ues.qosFlow"
+	chargingDataColl = "policyData.ues.chargingData"
 )
 
 // SmPoliciesPost -
@@ -49,7 +50,7 @@ func HandleCreateSmPolicyRequest(request *httpwrapper.Request) *httpwrapper.Resp
 
 func newQosDataWithQosFlowMap(qosFlow map[string]interface{}) *models.QosData {
 	qosData := &models.QosData{
-		QosId:  strconv.Itoa(int(qosFlow["qfi"].(float64))),
+		QosId:  strconv.Itoa(int(qosFlow["qosRef"].(float64))),
 		Qnc:    false,
 		Var5qi: int32(qosFlow["5qi"].(float64)),
 	}
@@ -73,6 +74,7 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 	header http.Header, response *models.SmPolicyDecision, problemDetails *models.ProblemDetails,
 ) {
 	var err error
+	queryStrength := 2 // 2: case-insensitive, 3: case-sensitive
 	logger.SmPolicyLog.Tracef("Handle Create SM Policy Request")
 
 	if request.Supi == "" || request.SliceInfo == nil || len(request.SliceInfo.Sd) != 6 {
@@ -108,8 +110,14 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 			Dnn:    optional.NewString(request.Dnn),
 		}
 		var response *http.Response
-		smData, response, err = client.DefaultApi.PolicyDataUesUeIdSmDataGet(context.Background(), ue.Supi, &param)
-		if err != nil || response == nil || response.StatusCode != http.StatusOK {
+
+		ctx, pd, err1 := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NUDR_DR, models.NfType_UDR)
+		if err1 != nil {
+			return nil, nil, pd
+		}
+
+		smData, response, err1 = client.DefaultApi.PolicyDataUesUeIdSmDataGet(ctx, ue.Supi, &param)
+		if err1 != nil || response == nil || response.StatusCode != http.StatusOK {
 			problemDetail := util.GetProblemDetail("Can't find UE SM Policy Data in UDR", util.USER_UNKNOWN)
 			logger.SmPolicyLog.Warnf("Can't find UE[%s] SM Policy Data in UDR", ue.Supi)
 			return nil, nil, &problemDetail
@@ -202,7 +210,7 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 	}
 
 	filter := bson.M{"ueId": ue.Supi, "snssai": util.SnssaiModelsToHex(*request.SliceInfo), "dnn": request.Dnn}
-	qosFlowInterface, err := mongoapi.RestfulAPIGetMany(qosFlowDataColl, filter)
+	qosFlowInterface, err := mongoapi.RestfulAPIGetMany(qosFlowDataColl, filter, queryStrength)
 	if err != nil {
 		logger.SmPolicyLog.Errorf("createSMPolicyProcedure error: %+v", err)
 	}
@@ -217,22 +225,167 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 	}
 
 	// get flow rules from databases
-	flowRulesInterface, err := mongoapi.RestfulAPIGetMany(flowRuleDataColl, filter)
+	flowRulesInterface, err := mongoapi.RestfulAPIGetMany(flowRuleDataColl, filter, queryStrength)
 	if err != nil {
 		logger.SmPolicyLog.Errorf("createSMPolicyProcedure error: %+v", err)
 	}
 
-	for _, flowRule := range flowRulesInterface {
+	pcc := util.CreateDefaultPccRules(smPolicyData.PccRuleIdGenerator)
+	smPolicyData.PccRuleIdGenerator++
+
+	filterCharging := bson.M{
+		"ueId":   ue.Supi,
+		"snssai": util.SnssaiModelsToHex(*request.SliceInfo),
+		"dnn":    "",
+		"filter": "",
+	}
+
+	chargingInterface, err := mongoapi.RestfulAPIGetOne(chargingDataColl, filterCharging, queryStrength)
+
+	if err != nil {
+		logger.SmPolicyLog.Errorf("Fail to get charging data to mongoDB err: %+v", err)
+		logger.SmPolicyLog.Errorf("chargingInterface %+v", chargingInterface)
+		util.SetPccRuleRelatedData(&decision, pcc, nil, nil, nil, nil)
+	} else if chargingInterface != nil {
+		rg, err1 := pcf_context.GetSelf().RatingGroupIdGenerator.Allocate()
+		if err1 != nil {
+			logger.SmPolicyLog.Error("rating group allocate error")
+			problemDetails := util.GetProblemDetail("rating group allocate error", util.ERROR_IDGENERATOR)
+			return nil, nil, &problemDetails
+		}
+		chgData := &models.ChargingData{
+			ChgId:          util.GetChgId(smPolicyData.ChargingIdGenerator),
+			RatingGroup:    int32(rg),
+			ReportingLevel: models.ReportingLevel_RAT_GR_LEVEL,
+			MeteringMethod: models.MeteringMethod_VOLUME,
+		}
+
+		switch chargingInterface["chargingMethod"].(string) {
+		case "Online":
+			chgData.Online = true
+			chgData.Offline = false
+		case "Offline":
+			chgData.Online = false
+			chgData.Offline = true
+		}
+		util.SetPccRuleRelatedData(&decision, pcc, nil, nil, chgData, nil)
+
+		chargingInterface["ratingGroup"] = chgData.RatingGroup
+		logger.SmPolicyLog.Tracef("put ratingGroup[%+v] for [%+v] to MongoDB", chgData.RatingGroup, ue.Supi)
+		if _, err = mongoapi.RestfulAPIPutOne(
+			chargingDataColl, chargingInterface, chargingInterface, queryStrength); err != nil {
+			logger.SmPolicyLog.Errorf("Fail to put charging data to mongoDB err: %+v", err)
+		}
+		if ue.RatingGroupData == nil {
+			ue.RatingGroupData = make(map[string][]int32)
+		}
+		ue.RatingGroupData[smPolicyID] = append(ue.RatingGroupData[smPolicyID], chgData.RatingGroup)
+
+		smPolicyData.ChargingIdGenerator++
+	}
+
+	logger.SmPolicyLog.Traceln("FlowRules for ueId:", ue.Supi, "snssai:", util.SnssaiModelsToHex(*request.SliceInfo))
+	for i, flowRule := range flowRulesInterface {
+		logger.SmPolicyLog.Tracef("flowRule %d: %s\n", i, openapi.MarshToJsonString(flowRule))
 		precedence := int32(flowRule["precedence"].(float64))
-		pccRule := util.CreatePccRule(smPolicyData.PccRuleIdGenerator, precedence, []models.FlowInformation{
-			{
-				FlowDescription: flowRule["filter"].(string),
-				FlowDirection:   models.FlowDirectionRm_BIDIRECTIONAL,
-			},
-		}, "")
-		qfi := strconv.Itoa(int(flowRule["qfi"].(float64)))
-		util.SetPccRuleRelatedByQFI(&decision, pccRule, qfi)
-		smPolicyData.PccRuleIdGenerator++
+		if val, ok := flowRule["filter"].(string); ok {
+			tokens := strings.Split(val, " ")
+
+			FlowDescription := flowdesc.NewIPFilterRule()
+			FlowDescription.Action = flowdesc.Permit
+			FlowDescription.Dir = flowdesc.Out
+			FlowDescription.Src = tokens[0]
+			FlowDescription.Dst = "assigned" // Hardcode destination (TS 29.212 5.4.2)
+
+			var err1, err2 error
+			portLowerBound := 1
+			portUpperBound := 65535
+			if len(tokens) > 1 {
+				portLowerBound, err1 = strconv.Atoi(strings.Split(tokens[1], "-")[0])
+				portUpperBound, err2 = strconv.Atoi(strings.Split(tokens[1], "-")[1])
+			}
+
+			if err1 != nil || err2 != nil {
+				logger.SmPolicyLog.Warnln("Wrong Port format in IP Filter's setting:", tokens[1], ", set to 1-65535")
+			}
+
+			if !(portLowerBound <= 1 && portUpperBound >= 65535) { // Port range need to be assigned
+				FlowDescription.SrcPorts = flowdesc.PortRanges{
+					flowdesc.PortRange{
+						Start: uint16(portLowerBound),
+						End:   uint16(portUpperBound),
+					},
+				}
+			}
+
+			var FlowDescriptionStr string
+			FlowDescriptionStr, err = flowdesc.Encode(FlowDescription)
+			if err != nil {
+				logger.SmPolicyLog.Errorf("Error occurs when encoding flow despcription: %s\n", err)
+			}
+
+			pccRule := util.CreatePccRule(smPolicyData.PccRuleIdGenerator, precedence, []models.FlowInformation{
+				{
+					FlowDescription: FlowDescriptionStr,
+					FlowDirection:   models.FlowDirectionRm_DOWNLINK,
+				},
+			}, "")
+
+			filterCharging := bson.M{
+				"ueId":   ue.Supi,
+				"snssai": util.SnssaiModelsToHex(*request.SliceInfo),
+				"dnn":    request.Dnn,
+				"filter": val,
+			}
+			var chargingInterface map[string]interface{}
+			chargingInterface, err = mongoapi.RestfulAPIGetOne(chargingDataColl, filterCharging, 2)
+			if err != nil {
+				logger.SmPolicyLog.Errorf("Fail to get charging data to mongoDB err: %+v", err)
+			} else {
+				rg, err1 := pcf_context.GetSelf().RatingGroupIdGenerator.Allocate()
+				if err1 != nil {
+					logger.SmPolicyLog.Error("rating group allocate error")
+					problemDetails := util.GetProblemDetail("rating group allocate error", util.ERROR_IDGENERATOR)
+					return nil, nil, &problemDetails
+				}
+				chgData := &models.ChargingData{
+					ChgId:          util.GetChgId(smPolicyData.ChargingIdGenerator),
+					RatingGroup:    int32(rg),
+					ReportingLevel: models.ReportingLevel_RAT_GR_LEVEL,
+					MeteringMethod: models.MeteringMethod_VOLUME,
+				}
+
+				switch chargingInterface["chargingMethod"].(string) {
+				case "Online":
+					chgData.Online = true
+					chgData.Offline = false
+				case "Offline":
+					chgData.Online = false
+					chgData.Offline = true
+				}
+
+				if decision.ChgDecs == nil {
+					decision.ChgDecs = make(map[string]*models.ChargingData)
+				}
+
+				chargingInterface["ratingGroup"] = chgData.RatingGroup
+				logger.SmPolicyLog.Tracef("put ratingGroup[%+v] for [%+v] to MongoDB", chgData.RatingGroup, ue.Supi)
+				if _, err = mongoapi.RestfulAPIPutOne(
+					chargingDataColl, chargingInterface, chargingInterface, queryStrength); err != nil {
+					logger.SmPolicyLog.Errorf("Fail to put charging data to mongoDB err: %+v", err)
+				} else {
+					util.SetPccRuleRelatedData(&decision, pccRule, nil, nil, chgData, nil)
+					smPolicyData.ChargingIdGenerator++
+				}
+				if ue.RatingGroupData == nil {
+					ue.RatingGroupData = make(map[string][]int32)
+				}
+				ue.RatingGroupData[smPolicyID] = append(ue.RatingGroupData[smPolicyID], chgData.RatingGroup)
+			}
+			qosRef := strconv.Itoa(int(flowRule["qosRef"].(float64)))
+			util.SetPccRuleRelatedByQosRef(&decision, pccRule, qosRef)
+			smPolicyData.PccRuleIdGenerator++
+		}
 	}
 
 	requestSuppFeat, err := openapi.NewSupportedFeature(request.SuppFeat)
@@ -254,10 +407,15 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 		Supis:            optional.NewInterface([]string{request.Supi}),
 	}
 
+	ctx, pd, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NUDR_DR, models.NfType_UDR)
+	if err != nil {
+		return nil, nil, pd
+	}
+
 	udrClient := util.GetNudrClient(udrUri)
 	var resp *http.Response
 	trafficInfluDatas, resp, err := udrClient.InfluenceDataApi.
-		ApplicationDataInfluenceDataGet(context.Background(), &reqParam)
+		ApplicationDataInfluenceDataGet(ctx, &reqParam)
 	if err != nil || resp == nil || resp.StatusCode != http.StatusOK {
 		logger.SmPolicyLog.Warnf("Error response from UDR Application Data Influence Data Get")
 	}
@@ -309,7 +467,13 @@ func createSMPolicyProcedure(request models.SmPolicyContextData) (
 	bsfUri := consumer.SendNFInstancesBSF(pcf_context.GetSelf().NrfUri)
 	if bsfUri != "" {
 		bsfClient := util.GetNbsfClient(bsfUri)
-		_, resp, err = bsfClient.PCFBindingsCollectionApi.CreatePCFBinding(context.Background(), pcfBinding)
+
+		ctx, pd, err = pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NBSF_MANAGEMENT, models.NfType_BSF)
+		if err != nil {
+			return nil, nil, pd
+		}
+
+		_, resp, err = bsfClient.PCFBindingsCollectionApi.CreatePCFBinding(ctx, pcfBinding)
 		if err != nil || resp == nil || resp.StatusCode != http.StatusCreated {
 			logger.SmPolicyLog.Warnf("Create PCF binding data in BSF error[%+v]", err)
 			// Uncomment the following to return error response --> PDU SessEstReq will fail
@@ -387,6 +551,19 @@ func deleteSmPolicyContextProcedure(smPolicyID string) *models.ProblemDetails {
 			logger.SmPolicyLog.Tracef("SMPolicy[%s] DELETE Related AppSession[%s]", smPolicyID, appSessionID)
 		}
 	}
+
+	for _, ratingGroup := range ue.RatingGroupData[smPolicyID] {
+		pcfSelf.RatingGroupIdGenerator.FreeID(int64(ratingGroup))
+
+		filterCharging := bson.M{
+			"ratingGroup": ratingGroup,
+		}
+		err := mongoapi.RestfulAPIDeleteMany(chargingDataColl, filterCharging)
+		if err != nil {
+			logger.SmPolicyLog.Errorf("Fail to delete charging data, ratingGroup: %+v, err: %+v", ratingGroup, err)
+		}
+	}
+	delete(ue.RatingGroupData, smPolicyID)
 	return nil
 }
 
@@ -1010,9 +1187,15 @@ func SendSMPolicyUpdateNotification(
 		logger.SmPolicyLog.Warnln("SM Policy Update Notification Error[uri is empty]")
 		return
 	}
+
+	ctx, _, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NPCF_SMPOLICYCONTROL, models.NfType_PCF)
+	if err != nil {
+		return
+	}
+
 	client := util.GetNpcfSMPolicyCallbackClient()
 	logger.SmPolicyLog.Infof("Send SM Policy Update Notification to SMF")
-	_, httpResponse, err := client.DefaultCallbackApi.SmPolicyUpdateNotification(context.Background(), uri, *request)
+	_, httpResponse, err := client.DefaultCallbackApi.SmPolicyUpdateNotification(ctx, uri, *request)
 	defer func() {
 		if httpResponse != nil {
 			if err = httpResponse.Body.Close(); err != nil {
@@ -1046,9 +1229,15 @@ func SendSMPolicyTerminationRequestNotification(
 		logger.SmPolicyLog.Warnln("SM Policy Termination Request Notification Error[uri is empty]")
 		return
 	}
+
+	ctx, _, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NPCF_SMPOLICYCONTROL, models.NfType_PCF)
+	if err != nil {
+		return
+	}
+
 	client := util.GetNpcfSMPolicyCallbackClient()
 	rsp, err := client.DefaultCallbackApi.
-		SmPolicyControlTerminationRequestNotification(context.Background(), uri, *request)
+		SmPolicyControlTerminationRequestNotification(ctx, uri, *request)
 	defer func() {
 		if rsp != nil {
 			if err = rsp.Body.Close(); err != nil {

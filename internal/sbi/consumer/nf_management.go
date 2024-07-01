@@ -1,17 +1,18 @@
 package consumer
 
 import (
-	"context"
 	"fmt"
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/Nnrf_NFManagement"
-	"github.com/nycu-ucr/openapi/models"
-	pcf_context "github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/pkg/errors"
+
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFManagement"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
 )
 
 func BuildNFInstance(context *pcf_context.PCFContext) (profile models.NfProfile, err error) {
@@ -51,11 +52,18 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
-	client := Nnrf_NFManagement.NewAPIClient(configuration)
+	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)
+
+	ctx, _, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NNRF_NFM, models.NfType_NRF)
+	if err != nil {
+		return "", "",
+			errors.Errorf("SendRegisterNFInstance error: %+v", err)
+	}
 
 	var res *http.Response
+	var nf models.NfProfile
 	for {
-		_, res, err = client.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
+		nf, res, err = apiClient.NFInstanceIDDocumentApi.RegisterNFInstance(ctx, nfInstanceId, profile)
 		if err != nil || res == nil {
 			// TODO : add log
 			fmt.Println(fmt.Errorf("PCF register to NRF Error[%v]", err.Error()))
@@ -76,6 +84,20 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 			resourceUri := res.Header.Get("Location")
 			resouceNrfUri = resourceUri[:strings.Index(resourceUri, "/nnrf-nfm/")]
 			retrieveNfInstanceID = resourceUri[strings.LastIndex(resourceUri, "/")+1:]
+
+			oauth2 := false
+			if nf.CustomInfo != nil {
+				v, ok := nf.CustomInfo["oauth2"].(bool)
+				if ok {
+					oauth2 = v
+					logger.MainLog.Infoln("OAuth2 setting receive from NRF:", oauth2)
+				}
+			}
+			pcf_context.GetSelf().OAuth2Required = oauth2
+
+			if oauth2 && pcf_context.GetSelf().NrfCertPem == "" {
+				logger.CfgLog.Error("OAuth2 enable but no nrfCertPem provided in config.")
+			}
 			break
 		} else {
 			fmt.Println("NRF return wrong status code", status)
@@ -87,6 +109,11 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err error) {
 	logger.ConsumerLog.Infof("Send Deregister NFInstance")
 
+	ctx, pd, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NNRF_NFM, models.NfType_NRF)
+	if err != nil {
+		return pd, err
+	}
+
 	pcfSelf := pcf_context.GetSelf()
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
@@ -95,9 +122,9 @@ func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err erro
 
 	var res *http.Response
 
-	res, err = client.NFInstanceIDDocumentApi.DeregisterNFInstance(context.Background(), pcfSelf.NfId)
+	res, err = client.NFInstanceIDDocumentApi.DeregisterNFInstance(ctx, pcfSelf.NfId)
 	if err == nil {
-		return
+		return nil, nil
 	} else if res != nil {
 		defer func() {
 			if resCloseErr := res.Body.Close(); resCloseErr != nil {
@@ -105,12 +132,12 @@ func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err erro
 			}
 		}()
 		if res.Status != err.Error() {
-			return
+			return nil, err
 		}
 		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem
 	} else {
 		err = openapi.ReportError("server no response")
 	}
-	return
+	return problemDetails, err
 }

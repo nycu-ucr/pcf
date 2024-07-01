@@ -1,16 +1,16 @@
 package consumer
 
 import (
-	"context"
 	"fmt"
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 
 	"github.com/antihax/optional"
 
-	"github.com/nycu-ucr/openapi/Nnrf_NFDiscovery"
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/internal/util"
+	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/internal/util"
 )
 
 func SendSearchNFInstances(
@@ -22,7 +22,12 @@ func SendSearchNFInstances(
 	configuration.SetBasePath(nrfUri)
 	client := Nnrf_NFDiscovery.NewAPIClient(configuration)
 
-	result, res, err := client.NFInstancesStoreApi.SearchNFInstances(context.TODO(), targetNfType, requestNfType, &param)
+	ctx, _, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NNRF_DISC, models.NfType_NRF)
+	if err != nil {
+		return nil, err
+	}
+
+	result, res, err := client.NFInstancesStoreApi.SearchNFInstances(ctx, targetNfType, requestNfType, &param)
 	if err != nil {
 		logger.ConsumerLog.Errorf("SearchNFInstances failed: %+v", err)
 	}

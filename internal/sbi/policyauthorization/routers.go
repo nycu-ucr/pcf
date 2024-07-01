@@ -10,14 +10,17 @@
 package policyauthorization
 
 import (
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"strings"
 
-	"github.com/nycu-ucr/gin"
+	"github.com/gin-gonic/gin"
 
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/pkg/factory"
-	logger_util "github.com/nycu-ucr/util/logger"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/internal/util"
+	"github.com/free5gc/pcf/pkg/factory"
+	logger_util "github.com/free5gc/util/logger"
 )
 
 // Route is the information for every URI.
@@ -44,6 +47,11 @@ func NewRouter() *gin.Engine {
 
 func AddService(engine *gin.Engine) *gin.RouterGroup {
 	group := engine.Group(factory.PcfPolicyAuthResUriPrefix)
+
+	routerAuthorizationCheck := util.NewRouterAuthorizationCheck(models.ServiceName_NPCF_POLICYAUTHORIZATION)
+	group.Use(func(c *gin.Context) {
+		routerAuthorizationCheck.Check(c, pcf_context.GetSelf())
+	})
 
 	for _, route := range routes {
 		switch route.Method {

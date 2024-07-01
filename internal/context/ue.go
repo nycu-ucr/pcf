@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/util/idgenerator"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/util/idgenerator"
 )
 
 // key is supi
@@ -36,6 +36,9 @@ type UeContext struct {
 	AppSessionIdStore           *AppSessionIdStore
 	PolicyDataSubscriptionStore *models.PolicyDataSubscription
 	PolicyDataChangeStore       *models.PolicyDataChangeNotification
+
+	// ChargingRatingGroup
+	RatingGroupData map[string][]int32 // use smPolicyId(ue.Supi-pduSessionId) as key
 }
 
 type UeAMPolicyData struct {
@@ -80,6 +83,7 @@ type UeSmPolicyData struct {
 	PackFiltIdGenerator int32
 	PccRuleIdGenerator  int32
 	ChargingIdGenerator int32
+
 	// FlowMapsToPackFiltIds  map[string][]string // use Flow Description(in TS 29214) as key map to pcc rule ids
 	PackFiltMapToPccRuleId map[string]string // use PackFiltId as Key
 	// Related to GBR
@@ -156,6 +160,7 @@ func (ue *UeContext) NewUeSmPolicyData(
 	// data.RefToAmPolicy = amData
 	data.PccRuleIdGenerator = 1
 	data.ChargingIdGenerator = 1
+
 	data.PcfUe = ue
 	ue.SmPolicyData[key] = &data
 	data.InfluenceDataToPccRule = make(map[string]string)

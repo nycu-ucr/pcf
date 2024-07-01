@@ -10,7 +10,7 @@
 package uepolicy
 
 import (
-	"github.com/nycu-ucr/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // PoliciesPolAssoIdDelete -

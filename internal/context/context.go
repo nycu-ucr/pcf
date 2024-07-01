@@ -1,6 +1,7 @@
 package context
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"os"
@@ -10,12 +11,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/pkg/factory"
-	"github.com/nycu-ucr/util/idgenerator"
-	"github.com/nycu-ucr/util/mongoapi"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/openapi/oauth"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/pkg/factory"
+	"github.com/free5gc/util/idgenerator"
+	"github.com/free5gc/util/mongoapi"
 )
 
 type PCFContext struct {
@@ -31,6 +33,7 @@ type PCFContext struct {
 	PcfServiceUris  map[models.ServiceName]string
 	PcfSuppFeats    map[models.ServiceName]openapi.SupportedFeature
 	NrfUri          string
+	NrfCertPem      string
 	DefaultUdrURI   string
 	Locality        string
 	// UePool          map[string]*UeContext
@@ -45,6 +48,11 @@ type PCFContext struct {
 
 	// lock
 	DefaultUdrURILock sync.RWMutex
+
+	// Charging
+	RatingGroupIdGenerator *idgenerator.IDGenerator
+
+	OAuth2Required bool
 }
 
 type AMFStatusSubscriptionData struct {
@@ -66,7 +74,13 @@ type AppSessionData struct {
 	SmPolicyData *UeSmPolicyData
 }
 
-var pcfContext PCFContext
+var pcfContext = PCFContext{}
+
+type NFContext interface {
+	AuthorizationCheck(token string, serviceName models.ServiceName) error
+}
+
+var _ NFContext = &PCFContext{}
 
 func InitpcfContext(context *PCFContext) {
 	config := factory.PcfConfig
@@ -86,6 +100,7 @@ func InitpcfContext(context *PCFContext) {
 
 	sbi := configuration.Sbi
 	context.NrfUri = configuration.NrfUri
+	context.NrfCertPem = configuration.NrfCertPem
 	context.UriScheme = ""
 	context.RegisterIPv4 = factory.PcfSbiDefaultIPv4 // default localhost
 	context.SBIPort = factory.PcfSbiDefaultPort      // default port
@@ -141,6 +156,7 @@ func Init() {
 	pcfContext.PcfServiceUris = make(map[models.ServiceName]string)
 	pcfContext.PcfSuppFeats = make(map[models.ServiceName]openapi.SupportedFeature)
 	pcfContext.BdtPolicyIDGenerator = idgenerator.NewGenerator(1, math.MaxInt64)
+	pcfContext.RatingGroupIdGenerator = idgenerator.NewGenerator(1, math.MaxInt64)
 	InitpcfContext(&pcfContext)
 }
 
@@ -425,4 +441,29 @@ func DeleteIpv6index(Ipv6index int32) {
 
 func (c *PCFContext) NewAmfStatusSubscription(subscriptionID string, subscriptionData AMFStatusSubscriptionData) {
 	c.AMFStatusSubsData.Store(subscriptionID, subscriptionData)
+}
+
+func (c *PCFContext) GetTokenCtx(serviceName models.ServiceName, targetNF models.NfType) (
+	context.Context, *models.ProblemDetails, error,
+) {
+	if !c.OAuth2Required {
+		return context.TODO(), nil, nil
+	}
+	return oauth.GetTokenCtx(models.NfType_PCF, targetNF,
+		c.NfId, c.NrfUri, string(serviceName))
+}
+
+func (c *PCFContext) AuthorizationCheck(token string, serviceName models.ServiceName) error {
+	if !c.OAuth2Required {
+		logger.UtilLog.Debugf("PCFContext::AuthorizationCheck: OAuth2 not required\n")
+		return nil
+	}
+	// TODO: free5gc webconsole uses npcf-oam but it can't get token since it's not an NF.
+	if serviceName == models.ServiceName_NPCF_OAM {
+		logger.UtilLog.Warnf("OAuth2 is enable but namf-oam didn't check token now.")
+		return nil
+	}
+
+	logger.UtilLog.Debugf("PCFContext::AuthorizationCheck: token[%s] serviceName[%s]\n", token, serviceName)
+	return oauth.VerifyOAuth(token, string(serviceName), c.NrfCertPem)
 }

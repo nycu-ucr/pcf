@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nycu-ucr/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 var MediaTypeTo5qiMap = map[models.MediaType]int32{
@@ -28,12 +28,6 @@ func CreateDefaultPccRules(id int32) *models.PccRule {
 			FlowDirection:     models.FlowDirectionRm_DOWNLINK,
 			PacketFilterUsage: true,
 			PackFiltId:        "PackFiltId-0",
-		},
-		{
-			FlowDescription:   "permit out ip from any to assigned",
-			FlowDirection:     models.FlowDirectionRm_DOWNLINK,
-			PacketFilterUsage: true,
-			PackFiltId:        "PackFiltId-1",
 		},
 	}
 	return CreatePccRule(id, 255, flowInfo, "")
@@ -176,13 +170,11 @@ func GetPccRuleByFlowInfos(pccRules map[string]*models.PccRule, flowInfos []mode
 	return nil
 }
 
-func SetPccRuleRelatedByQFI(decision *models.SmPolicyDecision, pccRule *models.PccRule, qfi string) {
-	if decision.QosDecs == nil {
-		return
-	} else if qosFlow := decision.QosDecs[qfi]; qosFlow == nil {
+func SetPccRuleRelatedByQosRef(decision *models.SmPolicyDecision, pccRule *models.PccRule, qfi string) {
+	if decision.QosDecs == nil || decision.QosDecs[qfi] == nil {
 		return
 	}
-	pccRule.RefQosData = []string{qfi}
+	pccRule.RefQosData = append(pccRule.RefQosData, qfi)
 	if decision.PccRules == nil {
 		decision.PccRules = make(map[string]*models.PccRule)
 	}
@@ -274,7 +266,7 @@ func isUpPathChgEventExist(trafficInfluData *models.TrafficInfluData) bool {
 		trafficInfluData.DnaiChgType != ""
 }
 
-//  subclause 4.2.6.2.6.2 in 3GPP TS 29.512.
+// subclause 4.2.6.2.6.2 in 3GPP TS 29.512.
 func setUpPathChgEvent(trafficInfluData *models.TrafficInfluData) *models.UpPathChgEvent {
 	return &models.UpPathChgEvent{
 		NotificationUri: trafficInfluData.UpPathChgNotifUri,

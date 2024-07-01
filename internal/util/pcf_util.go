@@ -4,19 +4,20 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
-	"github.com/nycu-ucr/openapi/Namf_Communication"
-	"github.com/nycu-ucr/openapi/Nbsf_Management"
-	"github.com/nycu-ucr/openapi/Npcf_AMPolicy"
-	"github.com/nycu-ucr/openapi/Npcf_PolicyAuthorization"
-	"github.com/nycu-ucr/openapi/Npcf_SMPolicyControl"
-	"github.com/nycu-ucr/openapi/Nudr_DataRepository"
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/free5gc/openapi/Namf_Communication"
+	"github.com/free5gc/openapi/Nbsf_Management"
+	"github.com/free5gc/openapi/Npcf_AMPolicy"
+	"github.com/free5gc/openapi/Npcf_PolicyAuthorization"
+	"github.com/free5gc/openapi/Npcf_SMPolicyControl"
+	"github.com/free5gc/openapi/Nudr_DataRepository"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
 )
 
 const TimeFormat = time.RFC3339
@@ -36,6 +37,7 @@ var (
 	UNAUTHORIZED_SPONSORED_DATA_CONNECTIVITY     = "UNAUTHORIZED_SPONSORED_DATA_CONNECTIVITY"
 	PDU_SESSION_NOT_AVAILABLE                    = "PDU_SESSION_NOT_AVAILABLE"
 	APPLICATION_SESSION_CONTEXT_NOT_FOUND        = "APPLICATION_SESSION_CONTEXT_NOT_FOUND"
+	ERROR_IDGENERATOR                            = "ERROR_IDGENERATOR"
 	PcpErrHttpStatusMap                          = map[string]int32{
 		ERROR_REQUEST_PARAMETERS:                     http.StatusBadRequest,
 		USER_UNKNOWN:                                 http.StatusBadRequest,
@@ -145,8 +147,11 @@ func GetSMPolicyDnnData(data models.SmPolicyData, snssai *models.Snssai, dnn str
 	if snssai == nil || dnn == "" || data.SmPolicySnssaiData == nil {
 		return
 	}
-	snssaiString := SnssaiModelsToHex(*snssai)
-	if snssaiData, exist := data.SmPolicySnssaiData[snssaiString]; exist {
+	snssaiStr := SnssaiModelsToHex(*snssai)
+	for key, snssaiData := range data.SmPolicySnssaiData {
+		if !strings.EqualFold(key, snssaiStr) {
+			continue
+		}
 		if snssaiData.SmPolicyDnnData == nil {
 			return
 		}

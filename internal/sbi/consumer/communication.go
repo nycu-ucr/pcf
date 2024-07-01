@@ -1,16 +1,15 @@
 package consumer
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/models"
-	pcf_context "github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/internal/util"
-	"github.com/nycu-ucr/pcf/pkg/factory"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/models"
+	pcf_context "github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/internal/util"
+	"github.com/free5gc/pcf/pkg/factory"
 )
 
 func AmfStatusChangeSubscribe(amfUri string, guamiList []models.Guami) (
@@ -24,9 +23,12 @@ func AmfStatusChangeSubscribe(amfUri string, guamiList []models.Guami) (
 		AmfStatusUri: fmt.Sprintf("%s"+factory.PcfCallbackResUriPrefix+"/amfstatus", pcfSelf.GetIPv4Uri()),
 		GuamiList:    guamiList,
 	}
-
+	ctx, pd, err := pcf_context.GetSelf().GetTokenCtx(models.ServiceName_NAMF_COMM, models.NfType_AMF)
+	if err != nil {
+		return pd, err
+	}
 	res, httpResp, localErr := client.SubscriptionsCollectionDocumentApi.AMFStatusChangeSubscribe(
-		context.Background(), subscriptionData)
+		ctx, subscriptionData)
 	defer func() {
 		if rspCloseErr := httpResp.Body.Close(); rspCloseErr != nil {
 			logger.ConsumerLog.Errorf("AMFStatusChangeSubscribe response body cannot close: %+v",
@@ -47,7 +49,7 @@ func AmfStatusChangeSubscribe(amfUri string, guamiList []models.Guami) (
 	} else if httpResp != nil {
 		if httpResp.Status != localErr.Error() {
 			err = localErr
-			return
+			return nil, err
 		}
 		problem := localErr.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
 		problemDetails = &problem

@@ -10,14 +10,14 @@
 package smpolicy
 
 import (
-	"github.com/nycu-ucr/gonet/http"
+	"net/http"
 	"strings"
 
-	"github.com/nycu-ucr/gin"
+	"github.com/gin-gonic/gin"
 
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/pkg/factory"
-	logger_util "github.com/nycu-ucr/util/logger"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/pkg/factory"
+	logger_util "github.com/free5gc/util/logger"
 )
 
 // Route is the information for every URI.
