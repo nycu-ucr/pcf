@@ -10,15 +10,15 @@
 package policyauthorization
 
 import (
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/nycu-ucr/gin"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/sbi/producer"
-	"github.com/free5gc/util/httpwrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/sbi/producer"
+	"github.com/nycu-ucr/util/httpwrapper"
 )
 
 // HTTPDeleteAppSession - Deletes an existing Individual Application Session Context

@@ -2,18 +2,19 @@ package producer
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/nycu-ucr/gonet/http"
+
 	"github.com/cydev/zero"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/util"
-	"github.com/free5gc/util/httpwrapper"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/util"
+	"github.com/nycu-ucr/util/httpwrapper"
 )
 
 const (

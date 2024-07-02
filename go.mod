@@ -1,6 +1,8 @@
 module github.com/nycu-ucr/pcf
 
-go 1.17
+go 1.21
+
+toolchain go1.21.8
 
 require (
 	github.com/antihax/optional v1.0.0
@@ -10,9 +12,10 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/nycu-ucr/cors v0.0.0-20221108151123-ce0e42c254d8
 	github.com/nycu-ucr/gin v0.0.0-20230307121200-573befe2dfbe
-	github.com/nycu-ucr/gonet v0.0.0-20231031091538-7b378fb19c77
-	github.com/nycu-ucr/openapi v0.0.0-20231031092106-c3b6f720a550
-	github.com/nycu-ucr/util v0.0.0-20230928120650-6ed674c090b3
+	github.com/nycu-ucr/gonet v0.0.0-20230328095129-6e9ca74b90b5
+	github.com/nycu-ucr/openapi v0.0.0-20240701095801-b729ffa469ad
+	github.com/nycu-ucr/util v0.0.0-20240702004404-3d25ec644b64
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli v1.22.5
 	go.mongodb.org/mongo-driver v1.8.4
@@ -31,17 +34,16 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nycu-ucr/gock v0.0.0-20230928062355-60066588379a // indirect
@@ -50,7 +52,6 @@ require (
 	github.com/nycu-ucr/onvmpoller v0.0.0-20230807070551-64ddd3797912 // indirect
 	github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/tim-ywliu/nested-logrus-formatter v1.3.2 // indirect
@@ -63,7 +64,6 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
