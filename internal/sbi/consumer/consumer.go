@@ -3,13 +3,13 @@ package consumer
 import (
 	"context"
 
-	"github.com/free5gc/openapi/amf/Communication"
-	"github.com/free5gc/openapi/nrf/NFDiscovery"
-	"github.com/free5gc/openapi/nrf/NFManagement"
-	"github.com/free5gc/openapi/pcf/AMPolicyControl"
-	"github.com/free5gc/openapi/udr/DataRepository"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/pkg/factory"
+	"github.com/nycu-ucr/openapi/amf/Communication"
+	"github.com/nycu-ucr/openapi/nrf/NFDiscovery"
+	"github.com/nycu-ucr/openapi/nrf/NFManagement"
+	"github.com/nycu-ucr/openapi/pcf/AMPolicyControl"
+	"github.com/nycu-ucr/openapi/udr/DataRepository"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/pkg/factory"
 )
 
 type pcf interface {

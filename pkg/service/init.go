@@ -9,13 +9,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/internal/sbi"
-	"github.com/free5gc/pcf/internal/sbi/consumer"
-	"github.com/free5gc/pcf/internal/sbi/processor"
-	"github.com/free5gc/pcf/pkg/app"
-	"github.com/free5gc/pcf/pkg/factory"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/internal/sbi"
+	"github.com/nycu-ucr/pcf/internal/sbi/consumer"
+	"github.com/nycu-ucr/pcf/internal/sbi/processor"
+	"github.com/nycu-ucr/pcf/pkg/app"
+	"github.com/nycu-ucr/pcf/pkg/factory"
 )
 
 var PCF *PcfApp

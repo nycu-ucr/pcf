@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-playground/assert/v2"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/nycu-ucr/openapi/models"
 )
 
 func TestSnssaiModelsToHex(t *testing.T) {

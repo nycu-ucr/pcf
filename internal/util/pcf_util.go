@@ -4,20 +4,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/free5gc/openapi/amf/Communication"
-	"github.com/free5gc/openapi/bsf/Management"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/openapi/pcf/AMPolicyControl"
-	"github.com/free5gc/openapi/pcf/PolicyAuthorization"
-	"github.com/free5gc/openapi/pcf/SMPolicyControl"
-	"github.com/free5gc/openapi/udr/DataRepository"
-	"github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
+	"github.com/nycu-ucr/gonet/http"
+
+	"github.com/nycu-ucr/openapi/amf/Communication"
+	"github.com/nycu-ucr/openapi/bsf/Management"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/openapi/pcf/AMPolicyControl"
+	"github.com/nycu-ucr/openapi/pcf/PolicyAuthorization"
+	"github.com/nycu-ucr/openapi/pcf/SMPolicyControl"
+	"github.com/nycu-ucr/openapi/udr/DataRepository"
+	"github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
 )
 
 const TimeFormat = time.RFC3339

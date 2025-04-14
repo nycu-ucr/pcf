@@ -1,13 +1,13 @@
 package sbi
 
 import (
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	"github.com/nycu-ucr/cors"
+	"github.com/nycu-ucr/gin"
 
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/pcf/internal/util"
+	"github.com/nycu-ucr/openapi/models"
+	"github.com/nycu-ucr/pcf/internal/util"
 )
 
 const (

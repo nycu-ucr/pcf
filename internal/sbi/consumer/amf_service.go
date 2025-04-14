@@ -5,12 +5,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/amf/Communication"
-	"github.com/free5gc/openapi/models"
-	pcf_context "github.com/free5gc/pcf/internal/context"
-	"github.com/free5gc/pcf/internal/logger"
-	"github.com/free5gc/pcf/pkg/factory"
+	"github.com/nycu-ucr/openapi"
+	"github.com/nycu-ucr/openapi/amf/Communication"
+	"github.com/nycu-ucr/openapi/models"
+	pcf_context "github.com/nycu-ucr/pcf/internal/context"
+	"github.com/nycu-ucr/pcf/internal/logger"
+	"github.com/nycu-ucr/pcf/pkg/factory"
 )
 
 type namfService struct {
