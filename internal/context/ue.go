@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/util/idgenerator"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/util/idgenerator"
 )
 
 // key is supi
@@ -36,22 +36,25 @@ type UeContext struct {
 	AppSessionIdStore           *AppSessionIdStore
 	PolicyDataSubscriptionStore *models.PolicyDataSubscription
 	PolicyDataChangeStore       *models.PolicyDataChangeNotification
+
+	// ChargingRatingGroup
+	RatingGroupData map[string][]int32 // use smPolicyId(ue.Supi-pduSessionId) as key
 }
 
 type UeAMPolicyData struct {
 	PolAssoId         string
 	AccessType        models.AccessType
 	NotificationUri   string
-	ServingPlmn       *models.NetworkId
+	ServingPlmn       *models.PlmnIdNid
 	AltNotifIpv4Addrs []string
 	AltNotifIpv6Addrs []string
 	// TODO: AMF Status Change
 	AmfStatusUri string
 	Guami        *models.Guami
-	ServiveName  string
+	ServiceName  models.ServiceName
 	// TraceReq *TraceData
 	// Policy Association
-	Triggers    []models.RequestTrigger
+	Triggers    []models.PcfAmPolicyControlRequestTrigger
 	ServAreaRes *models.ServiceAreaRestriction
 	Rfsp        int32
 	UserLoc     *models.UserLocation
@@ -80,6 +83,7 @@ type UeSmPolicyData struct {
 	PackFiltIdGenerator int32
 	PccRuleIdGenerator  int32
 	ChargingIdGenerator int32
+
 	// FlowMapsToPackFiltIds  map[string][]string // use Flow Description(in TS 29214) as key map to pcc rule ids
 	PackFiltMapToPccRuleId map[string]string // use PackFiltId as Key
 	// Related to GBR
@@ -99,7 +103,10 @@ type UeSmPolicyData struct {
 }
 
 // NewUeAMPolicyData returns created UeAMPolicyData data and insert this data to Ue.AMPolicyData with assolId as key
-func (ue *UeContext) NewUeAMPolicyData(assolId string, req models.PolicyAssociationRequest) *UeAMPolicyData {
+func (ue *UeContext) NewUeAMPolicyData(
+	assolId string,
+	req models.PcfAmPolicyControlPolicyAssociationRequest,
+) *UeAMPolicyData {
 	ue.Gpsi = req.Gpsi
 	ue.Pei = req.Pei
 	ue.GroupIds = req.GroupIds
@@ -115,7 +122,7 @@ func (ue *UeContext) NewUeAMPolicyData(assolId string, req models.PolicyAssociat
 		Rfsp:              req.Rfsp,
 		Guami:             req.Guami,
 		UserLoc:           req.UserLoc,
-		ServiveName:       req.ServiveName,
+		ServiceName:       req.ServiceName,
 		PcfUe:             ue,
 	}
 	ue.AMPolicyData[assolId].Pras = make(map[string]models.PresenceInfo)
@@ -156,6 +163,7 @@ func (ue *UeContext) NewUeSmPolicyData(
 	// data.RefToAmPolicy = amData
 	data.PccRuleIdGenerator = 1
 	data.ChargingIdGenerator = 1
+
 	data.PcfUe = ue
 	ue.SmPolicyData[key] = &data
 	data.InfluenceDataToPccRule = make(map[string]string)
@@ -259,7 +267,7 @@ func (policy *UeSmPolicyData) RemovePccRule(pccRuleId string, deletedSmPolicyDec
 }
 
 // Check if the afEvent exists in smPolicy
-func (policy *UeSmPolicyData) CheckRelatedAfEvent(event models.AfEvent) (found bool) {
+func (policy *UeSmPolicyData) CheckRelatedAfEvent(event models.PcfPolicyAuthorizationAfEvent) (found bool) {
 	for appSessionId := range policy.AppSessions {
 		if val, ok := GetSelf().AppSessionPool.Load(appSessionId); ok {
 			appSession := val.(*AppSessionData)
@@ -277,20 +285,20 @@ func (policy *UeSmPolicyData) CheckRelatedAfEvent(event models.AfEvent) (found b
 func (policy *UeSmPolicyData) ArrangeExistEventSubscription() (changed bool) {
 	triggers := []models.PolicyControlRequestTrigger{}
 	for _, trigger := range policy.PolicyDecision.PolicyCtrlReqTriggers {
-		var afEvent models.AfEvent
+		var afEvent models.PcfPolicyAuthorizationAfEvent
 		switch trigger {
 		case models.PolicyControlRequestTrigger_PLMN_CH: // PLMN Change
-			afEvent = models.AfEvent_PLMN_CHG
+			afEvent = models.PcfPolicyAuthorizationAfEvent_PLMN_CHG
 		case models.PolicyControlRequestTrigger_QOS_NOTIF:
 			// SMF notify PCF when receiving from RAN that QoS can/can't be guaranteed (subsclause 4.2.4.20 in TS29512) (always)
-			afEvent = models.AfEvent_QOS_NOTIF
+			afEvent = models.PcfPolicyAuthorizationAfEvent_QOS_NOTIF
 		case models.PolicyControlRequestTrigger_SUCC_RES_ALLO:
 			// Successful resource allocation (subsclause 4.2.6.5.5, 4.2.4.14 in TS29512)
-			afEvent = models.AfEvent_SUCCESSFUL_RESOURCES_ALLOCATION
+			afEvent = models.PcfPolicyAuthorizationAfEvent_SUCCESSFUL_RESOURCES_ALLOCATION
 		case models.PolicyControlRequestTrigger_AC_TY_CH: // Change of RatType
-			afEvent = models.AfEvent_ACCESS_TYPE_CHANGE
+			afEvent = models.PcfPolicyAuthorizationAfEvent_ACCESS_TYPE_CHANGE
 		case models.PolicyControlRequestTrigger_US_RE: // UMC
-			afEvent = models.AfEvent_USAGE_REPORT
+			afEvent = models.PcfPolicyAuthorizationAfEvent_USAGE_REPORT
 		}
 		if afEvent != "" && !policy.CheckRelatedAfEvent(afEvent) {
 			changed = true
@@ -379,7 +387,7 @@ func DecreaseRamainBitRateToZero(remainBitRate *float64) string {
 }
 
 // returns AM Policy which AccessType and plmnId match
-func (ue *UeContext) FindAMPolicy(anType models.AccessType, plmnId *models.NetworkId) *UeAMPolicyData {
+func (ue *UeContext) FindAMPolicy(anType models.AccessType, plmnId *models.PlmnIdNid) *UeAMPolicyData {
 	if ue == nil || plmnId == nil {
 		return nil
 	}

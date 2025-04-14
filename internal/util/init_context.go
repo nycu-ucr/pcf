@@ -5,12 +5,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/context"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/pkg/factory"
-	"github.com/nycu-ucr/util/mongoapi"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/pcf/internal/context"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/pkg/factory"
+	"github.com/free5gc/util/mongoapi"
 )
 
 // Init PCF Context from config flie
@@ -69,7 +69,7 @@ func InitpcfContext(context *context.PCFContext) {
 	for _, service := range context.NfService {
 		var err error
 		context.PcfServiceUris[service.ServiceName] = service.ApiPrefix +
-			"/" + string(service.ServiceName) + "/" + (*service.Versions)[0].ApiVersionInUri
+			"/" + string(service.ServiceName) + "/" + (service.Versions)[0].ApiVersionInUri
 		context.PcfSuppFeats[service.ServiceName], err = openapi.NewSupportedFeature(service.SupportedFeatures)
 		if err != nil {
 			logger.UtilLog.Errorf("openapi NewSupportedFeature error: %+v", err)

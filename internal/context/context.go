@@ -1,6 +1,7 @@
 package context
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"os"
@@ -10,12 +11,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/nycu-ucr/openapi"
-	"github.com/nycu-ucr/openapi/models"
-	"github.com/nycu-ucr/pcf/internal/logger"
-	"github.com/nycu-ucr/pcf/pkg/factory"
-	"github.com/nycu-ucr/util/idgenerator"
-	"github.com/nycu-ucr/util/mongoapi"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/models"
+	"github.com/free5gc/openapi/oauth"
+	"github.com/free5gc/pcf/internal/logger"
+	"github.com/free5gc/pcf/pkg/factory"
+	"github.com/free5gc/util/idgenerator"
+	"github.com/free5gc/util/mongoapi"
 )
 
 type PCFContext struct {
@@ -27,10 +29,11 @@ type PCFContext struct {
 	SBIPort         int
 	TimeFormat      string
 	DefaultBdtRefId string
-	NfService       map[models.ServiceName]models.NfService
+	NfService       map[models.ServiceName]models.NrfNfManagementNfService
 	PcfServiceUris  map[models.ServiceName]string
 	PcfSuppFeats    map[models.ServiceName]openapi.SupportedFeature
 	NrfUri          string
+	NrfCertPem      string
 	DefaultUdrURI   string
 	Locality        string
 	// UePool          map[string]*UeContext
@@ -45,6 +48,11 @@ type PCFContext struct {
 
 	// lock
 	DefaultUdrURILock sync.RWMutex
+
+	// Charging
+	RatingGroupIdGenerator *idgenerator.IDGenerator
+
+	OAuth2Required bool
 }
 
 type AMFStatusSubscriptionData struct {
@@ -60,15 +68,21 @@ type AppSessionData struct {
 	RelatedPccRuleIds    map[string]string
 	PccRuleIdMapToCompId map[string]string
 	// EventSubscription
-	Events   map[models.AfEvent]models.AfNotifMethod
+	Events   map[models.PcfPolicyAuthorizationAfEvent]models.AfNotifMethod
 	EventUri string
 	// related Session
 	SmPolicyData *UeSmPolicyData
 }
 
-var pcfContext PCFContext
+var pcfContext = PCFContext{}
 
-func InitpcfContext(context *PCFContext) {
+type NFContext interface {
+	AuthorizationCheck(token string, serviceName models.ServiceName) error
+}
+
+var _ NFContext = &PCFContext{}
+
+func InitPcfContext(context *PCFContext) {
 	config := factory.PcfConfig
 	logger.UtilLog.Infof("pcfconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
@@ -86,6 +100,7 @@ func InitpcfContext(context *PCFContext) {
 
 	sbi := configuration.Sbi
 	context.NrfUri = configuration.NrfUri
+	context.NrfCertPem = configuration.NrfCertPem
 	context.UriScheme = ""
 	context.RegisterIPv4 = factory.PcfSbiDefaultIPv4 // default localhost
 	context.SBIPort = factory.PcfSbiDefaultPort      // default port
@@ -123,7 +138,7 @@ func InitpcfContext(context *PCFContext) {
 	for _, service := range context.NfService {
 		var err error
 		context.PcfServiceUris[service.ServiceName] = service.ApiPrefix +
-			"/" + string(service.ServiceName) + "/" + (*service.Versions)[0].ApiVersionInUri
+			"/" + string(service.ServiceName) + "/" + (service.Versions)[0].ApiVersionInUri
 		context.PcfSuppFeats[service.ServiceName], err = openapi.NewSupportedFeature(service.SupportedFeatures)
 		if err != nil {
 			logger.UtilLog.Errorf("openapi NewSupportedFeature error: %+v", err)
@@ -137,11 +152,12 @@ func Init() {
 	pcfContext.UriScheme = models.UriScheme_HTTPS
 	pcfContext.TimeFormat = "2006-01-02 15:04:05"
 	pcfContext.DefaultBdtRefId = "BdtPolicyId-"
-	pcfContext.NfService = make(map[models.ServiceName]models.NfService)
+	pcfContext.NfService = make(map[models.ServiceName]models.NrfNfManagementNfService)
 	pcfContext.PcfServiceUris = make(map[models.ServiceName]string)
 	pcfContext.PcfSuppFeats = make(map[models.ServiceName]openapi.SupportedFeature)
 	pcfContext.BdtPolicyIDGenerator = idgenerator.NewGenerator(1, math.MaxInt64)
-	InitpcfContext(&pcfContext)
+	pcfContext.RatingGroupIdGenerator = idgenerator.NewGenerator(1, math.MaxInt64)
+	InitPcfContext(&pcfContext)
 }
 
 // Create new PCF context
@@ -181,10 +197,10 @@ func (c *PCFContext) InitNFService(serviceList []factory.Service, version string
 	versionUri := "v" + tmpVersion[0]
 	for index, service := range serviceList {
 		name := models.ServiceName(service.ServiceName)
-		c.NfService[name] = models.NfService{
+		c.NfService[name] = models.NrfNfManagementNfService{
 			ServiceInstanceId: strconv.Itoa(index),
 			ServiceName:       name,
-			Versions: &[]models.NfServiceVersion{
+			Versions: []models.NfServiceVersion{
 				{
 					ApiFullVersion:  version,
 					ApiVersionInUri: versionUri,
@@ -193,10 +209,10 @@ func (c *PCFContext) InitNFService(serviceList []factory.Service, version string
 			Scheme:          c.UriScheme,
 			NfServiceStatus: models.NfServiceStatus_REGISTERED,
 			ApiPrefix:       c.GetIPv4Uri(),
-			IpEndPoints: &[]models.IpEndPoint{
+			IpEndPoints: []models.IpEndPoint{
 				{
 					Ipv4Address: c.RegisterIPv4,
-					Transport:   models.TransportProtocol_TCP,
+					Transport:   models.NrfNfManagementTransportProtocol_TCP,
 					Port:        int32(c.SBIPort),
 				},
 			},
@@ -425,4 +441,24 @@ func DeleteIpv6index(Ipv6index int32) {
 
 func (c *PCFContext) NewAmfStatusSubscription(subscriptionID string, subscriptionData AMFStatusSubscriptionData) {
 	c.AMFStatusSubsData.Store(subscriptionID, subscriptionData)
+}
+
+func (c *PCFContext) GetTokenCtx(serviceName models.ServiceName, targetNF models.NrfNfManagementNfType) (
+	context.Context, *models.ProblemDetails, error,
+) {
+	if !c.OAuth2Required {
+		return context.TODO(), nil, nil
+	}
+	return oauth.GetTokenCtx(models.NrfNfManagementNfType_PCF, targetNF,
+		c.NfId, c.NrfUri, string(serviceName))
+}
+
+func (c *PCFContext) AuthorizationCheck(token string, serviceName models.ServiceName) error {
+	if !c.OAuth2Required {
+		logger.UtilLog.Debugf("PCFContext::AuthorizationCheck: OAuth2 not required\n")
+		return nil
+	}
+
+	logger.UtilLog.Debugf("PCFContext::AuthorizationCheck: token[%s] serviceName[%s]\n", token, serviceName)
+	return oauth.VerifyOAuth(token, string(serviceName), c.NrfCertPem)
 }

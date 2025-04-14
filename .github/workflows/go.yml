@@ -4,14 +4,13 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.18' ]
+        go: [ '1.21' ]
     steps:
     - uses: actions/checkout@v3
 

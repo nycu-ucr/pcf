@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nycu-ucr/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 var MediaTypeTo5qiMap = map[models.MediaType]int32{
@@ -25,15 +25,9 @@ func CreateDefaultPccRules(id int32) *models.PccRule {
 	flowInfo := []models.FlowInformation{
 		{
 			FlowDescription:   "permit out ip from any to assigned",
-			FlowDirection:     models.FlowDirectionRm_DOWNLINK,
+			FlowDirection:     models.FlowDirection_BIDIRECTIONAL,
 			PacketFilterUsage: true,
 			PackFiltId:        "PackFiltId-0",
-		},
-		{
-			FlowDescription:   "permit out ip from any to assigned",
-			FlowDirection:     models.FlowDirectionRm_DOWNLINK,
-			PacketFilterUsage: true,
-			PackFiltId:        "PackFiltId-1",
 		},
 	}
 	return CreatePccRule(id, 255, flowInfo, "")
@@ -137,7 +131,7 @@ func ConvertPacketInfoToFlowInformation(infos []models.PacketFilterInfo) (flowIn
 			TosTrafficClass:   info.TosTrafficClass,
 			Spi:               info.Spi,
 			FlowLabel:         info.FlowLabel,
-			FlowDirection:     models.FlowDirectionRm(info.FlowDirection),
+			FlowDirection:     info.FlowDirection,
 		}
 		flowInfos = append(flowInfos, flowInfo)
 	}
@@ -176,13 +170,11 @@ func GetPccRuleByFlowInfos(pccRules map[string]*models.PccRule, flowInfos []mode
 	return nil
 }
 
-func SetPccRuleRelatedByQFI(decision *models.SmPolicyDecision, pccRule *models.PccRule, qfi string) {
-	if decision.QosDecs == nil {
-		return
-	} else if qosFlow := decision.QosDecs[qfi]; qosFlow == nil {
+func SetPccRuleRelatedByQosRef(decision *models.SmPolicyDecision, pccRule *models.PccRule, qfi string) {
+	if decision.QosDecs == nil || decision.QosDecs[qfi] == nil {
 		return
 	}
-	pccRule.RefQosData = []string{qfi}
+	pccRule.RefQosData = append(pccRule.RefQosData, qfi)
 	if decision.PccRules == nil {
 		decision.PccRules = make(map[string]*models.PccRule)
 	}
@@ -237,13 +229,13 @@ func SetSmPolicyDecisionByDefault(decision *models.SmPolicyDecision, id int32) {
 
 // Set SMpilicy decision with the PCC rule generated from the trafficInfluData
 func SetSmPolicyDecisionByTrafficInfluData(decision *models.SmPolicyDecision,
-	pccRule *models.PccRule, trafficInfluData models.TrafficInfluData,
+	pccRule *models.PccRule, trafficInfluData models.TrafficInfluData, chgData *models.ChargingData,
 ) {
 	tcData := convertToTrafficControlData(&trafficInfluData)
 	tcData.TcId = strings.ReplaceAll(pccRule.PccRuleId, "PccRuleId", "TcId")
 	flowInfos := convertToFlowinfos(&trafficInfluData)
 	pccRule.FlowInfos = flowInfos
-	SetPccRuleRelatedData(decision, pccRule, tcData, nil, nil, nil)
+	SetPccRuleRelatedData(decision, pccRule, tcData, nil, chgData, nil)
 }
 
 func convertToFlowinfos(trafficInfluData *models.TrafficInfluData) []models.FlowInformation {
@@ -274,7 +266,7 @@ func isUpPathChgEventExist(trafficInfluData *models.TrafficInfluData) bool {
 		trafficInfluData.DnaiChgType != ""
 }
 
-//  subclause 4.2.6.2.6.2 in 3GPP TS 29.512.
+// subclause 4.2.6.2.6.2 in 3GPP TS 29.512.
 func setUpPathChgEvent(trafficInfluData *models.TrafficInfluData) *models.UpPathChgEvent {
 	return &models.UpPathChgEvent{
 		NotificationUri: trafficInfluData.UpPathChgNotifUri,
