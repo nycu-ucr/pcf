@@ -250,11 +250,20 @@ func (p *Processor) HandleCreateSmPolicyRequest(
 		if val, ok := flowRule["filter"].(string); ok {
 			tokens := strings.Split(val, " ")
 
-			FlowDescription := flowdesc.NewIPFilterRule()
-			FlowDescription.Action = flowdesc.Permit
-			FlowDescription.Dir = flowdesc.Out
-			FlowDescription.Src = tokens[0]
-			FlowDescription.Dst = "assigned" // Hardcode destination (TS 29.212 5.4.2)
+			// Generate BOTH directions so UL and DL can match the same rule:
+			// - Uplink (UE -> DN):   from assigned to <remote>
+			// - Downlink (DN -> UE): from <remote> to assigned
+			FlowDescriptionUL := flowdesc.NewIPFilterRule()
+			FlowDescriptionUL.Action = flowdesc.Permit
+			FlowDescriptionUL.Dir = flowdesc.Out
+			FlowDescriptionUL.Src = "assigned" // UE IP
+			FlowDescriptionUL.Dst = tokens[0]   // remote DN
+
+			FlowDescriptionDL := flowdesc.NewIPFilterRule()
+			FlowDescriptionDL.Action = flowdesc.Permit
+			FlowDescriptionDL.Dir = flowdesc.Out
+			FlowDescriptionDL.Src = tokens[0]   // remote DN
+			FlowDescriptionDL.Dst = "assigned" // UE IP (TS 29.212 5.4.2)
 
 			var err1, err2 error
 			portLowerBound := 1
@@ -269,23 +278,30 @@ func (p *Processor) HandleCreateSmPolicyRequest(
 			}
 
 			if !(portLowerBound <= 1 && portUpperBound >= 65535) { // Port range need to be assigned
-				FlowDescription.SrcPorts = flowdesc.PortRanges{
-					flowdesc.PortRange{
-						Start: uint16(portLowerBound),
-						End:   uint16(portUpperBound),
-					},
-				}
+				port_range := flowdesc.PortRange{Start: uint16(portLowerBound), End: uint16(portUpperBound)}
+				// UL: remote port is destination port
+				FlowDescriptionUL.DstPorts = flowdesc.PortRanges{port_range}
+				// DL: remote port is source port
+				FlowDescriptionDL.SrcPorts = flowdesc.PortRanges{port_range}
 			}
 
-			var FlowDescriptionStr string
-			FlowDescriptionStr, err = flowdesc.Encode(FlowDescription)
+			var flowUL, flowDL string
+			flowUL, err = flowdesc.Encode(FlowDescriptionUL)
 			if err != nil {
-				logger.SmPolicyLog.Errorf("Error occurs when encoding flow despcription: %s\n", err)
+				logger.SmPolicyLog.Errorf("Error occurs when encoding UL flow description: %s\n", err)
+			}
+			flowDL, err = flowdesc.Encode(FlowDescriptionDL)
+			if err != nil {
+				logger.SmPolicyLog.Errorf("Error occurs when encoding DL flow description: %s\n", err)
 			}
 
 			pccRule := util.CreatePccRule(smPolicyData.PccRuleIdGenerator, precedence, []models.FlowInformation{
 				{
-					FlowDescription: FlowDescriptionStr,
+					FlowDescription: flowUL,
+					FlowDirection:   models.FlowDirection_UPLINK,
+				},
+				{
+					FlowDescription: flowDL,
 					FlowDirection:   models.FlowDirection_DOWNLINK,
 				},
 			}, "")
